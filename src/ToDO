@@ -1,0 +1,10 @@
+[ ] - Create an array - board - 11 / 11 => 1-10 && A - J && ~ as FOW
+[ ] - Create an array of ships {Aircraft Carrier is 5 cells, Battleship is 4 cells, Submarine is 3 cells,
+        Cruiser is also 3 cells, and Destroyer is 2 cells}
+[ ] - System to place the ships
+    [ ] - Read input
+    [ ] - Check if the coordinates are valid
+    [ ] - Check if the placement of the ship is valid
+        [ ] - They cannot be on top of each other
+        [ ] - There has to be at least one space in between ships
+[ ] - Create Printing function to display the board
