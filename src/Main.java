@@ -1,20 +1,37 @@
+// TODO
+//  [ ] -> Two Players
+//      [ ] -> we need 2 rotations for the initialShipPlacement
+//      [ ] -> we need a way to determine which Player has won / or do we?
+//      [ ] -> we need to keep track of the ships separately for each Player
+//          ideas:
+//              - I can create 2 battlefields and check them separately
+
+import java.util.Arrays;
 import java.util.Scanner;
 
 public class Main {
 
     public static void main(String[] args) {
-        Ship[] ships = {new Ship("Destroyer", 2),
+        Ship[] shipsP1 = {new Ship("Destroyer", 2),
+                new Ship("Cruiser", 3),
+                new Ship("Submarine", 3),
+                new Ship("Battleship", 4),
+                new Ship("Aircraft Carrier", 5)};
+        Ship[] shipsP2 = {new Ship("Destroyer", 2),
                 new Ship("Cruiser", 3),
                 new Ship("Submarine", 3),
                 new Ship("Battleship", 4),
                 new Ship("Aircraft Carrier", 5)};
 
+        Battlefield battlefieldP1 = new Battlefield(shipsP1);
+        Battlefield battlefieldP2 = new Battlefield(shipsP2);
 
-        Battlefield battlefield = new Battlefield(ships);
+        Game.initialShipPlacement(battlefieldP1, 1);
+        Game.passTurn();
+        Game.initialShipPlacement(battlefieldP2, 2);
 
-        Game.initialShipPlacement(battlefield);
         System.out.println("The game starts!\n");
-        Game.playRound(battlefield);
+        Game.playGame(battlefieldP1, battlefieldP2);
         Game.scanner.close();
     }
 }
@@ -22,7 +39,8 @@ public class Main {
 class Game extends GameRules {
     static Scanner scanner = new Scanner(System.in);
 
-    public static void initialShipPlacement(Battlefield battlefield) {
+    public static void initialShipPlacement(Battlefield battlefield, int player) {
+        System.out.printf("\nPlayer %d, place your ships on the game field\n", player);
         battlefield.createBattlefield();
         battlefield.printBattlefield();
         while (battlefield.getShipNumber() != 0) { // initial placement loop
@@ -44,30 +62,59 @@ class Game extends GameRules {
                     }
                 }
         }
-
     }
 
-    public static void playRound(Battlefield battlefield) {
-            System.out.println("Take a shot!\n");
-            battlefield.printBattlefieldFOW();
-        while(!gameState(battlefield.getAllShips())) {
+    public static void playGame(Battlefield battlefieldP1, Battlefield battlefieldP2) {
+        while(!gameState(battlefieldP1.getAllShips()) && !gameState(battlefieldP2.getAllShips())) {
             while (true) {
                 try {
+                    battlefieldP2.printBattlefieldFOW();
+                    System.out.println("---------------------");
+                    battlefieldP1.printBattlefield();
+                    System.out.println("\nPlayer 1 tak a shot: \n");
                     Shell shell = new Shell();
                     shell.convertShellCords(scanner.nextLine());
-                    checkFireRules(battlefield, shell.getShellCords());
-                    battlefield.placeShell(shell.getShellCords());
+                    checkFireRules(battlefieldP2, shell.getShellCords());
+                    battlefieldP2.placeShell(shell.getShellCords());
+                    passTurn();
                     break;
                 } catch (Exception e) {
                     System.out.println(e.getMessage().contains("Error") ? "\n" + e.getMessage() :
                             new Exception(String.format("Error! %s. Try again: " + "\n",
                                     e.getLocalizedMessage())).getMessage());
-                    battlefield.printBattlefieldFOW();
+                }
+            }
+
+            if (gameState(battlefieldP1.getAllShips()) || gameState(battlefieldP2.getAllShips())) break;
+
+            while (true) {
+                try {
+                    battlefieldP1.printBattlefieldFOW();
+                    System.out.println("---------------------");
+                    battlefieldP2.printBattlefield();
+                    System.out.println("\nPlayer 2 tak a shot: \n");
+                    Shell shell = new Shell();
+                    shell.convertShellCords(scanner.nextLine());
+                    checkFireRules(battlefieldP1, shell.getShellCords());
+                    battlefieldP1.placeShell(shell.getShellCords());
+                    passTurn();
+                    break;
+                } catch (Exception e) {
+                    System.out.println(e.getMessage().contains("Error") ? "\n" + e.getMessage() :
+                            new Exception(String.format("Error! %s. Try again: " + "\n",
+                                    e.getLocalizedMessage())).getMessage());
                 }
             }
         }
     }
+    public static void passTurn() {
+        System.out.println("\nPress Enter and pass the move to another player\n");
 
+
+        while(scanner.nextLine().length() > 0 ) {
+            System.out.println("\nPress Enter and pass the move to another player\n");
+        }
+    }
 }
 
 class GameRules {
@@ -192,41 +239,46 @@ class Battlefield {
     public void placeShell(int[] cords) {
         if(battlefield[cords[0] - 1][cords[1] - 1] == '~') {
             battlefield[cords[0] - 1][cords[1] - 1] = 'M';
-            printBattlefieldFOW();
-
-            System.out.println("\nYou missed. Try again:\n");
+            System.out.println("\nYou missed.\n");
 
         }
         if(battlefield[cords[0] - 1][cords[1] - 1] == 'O') {
             battlefield[cords[0] - 1][cords[1] - 1] = 'X';
-            printBattlefieldFOW();
-
             decreaseHPBasedOnCords(cords);
-
         }
     }
     public void decreaseHPBasedOnCords(int[] cords) {
-        for (int s = 0; s < 5; s++) {
-            try {
-                int[] shipCords = ships[s].getShipCords();
-                for (int i = shipCords[0]; i <= shipCords[2]; i++){
-                    for (int j = shipCords[1]; j <= shipCords[3]; j++){
+        try {
+//            for (int s = 0; s < 5; s++) {
+            // TODO
+            //  the problem is with the ship cords not being changed from p1 to p2
+                int[] shipCords;
+                for (int s = 0; s < 1; s++) {
+                    shipCords = ships[s].getShipCords();
+                    System.out.println("DEBUG" + Arrays.toString(shipCords));
+                    System.out.println("DEBUG" + Arrays.toString(cords));
+                    for (int i = shipCords[0]; i <= shipCords[2]; i++) {
+                    System.out.println("DEBUG outer loop");
+                    for (int j = shipCords[1]; j <= shipCords[3]; j++) {
+                        System.out.println("DEBUG inner loop");
                         if (i == cords[0] && j == cords[1]) {
                             ships[s].decreaseShipHP();
                             if (ships[s].getShipHP() != 0) {
-                                System.out.println("You hit a ship! Try again: \n");
+                                System.out.println("You hit a ship!\n");
+                                break;
                             } else if (GameRules.gameState(ships)) {
                                 System.out.println("You sank the last ship. You won. Congratulations! \n");
+                                break;
                             } else {
-                                System.out.println("You sank a ship! Specify a new target: \n");
+                                System.out.println("You sank a ship!\n");
+                                break;
                             }
                         }
                     }
                 }
-            } catch (Exception ignored) {
-
             }
-
+        } catch (Exception e) {
+            e.printStackTrace(System.out);
         }
     }
 }
