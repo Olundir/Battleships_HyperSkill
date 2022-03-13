@@ -1,11 +1,3 @@
-// TODO
-//  [ ] -> Two Players
-//      [ ] -> we need 2 rotations for the initialShipPlacement
-//      [ ] -> we need a way to determine which Player has won / or do we?
-//      [ ] -> we need to keep track of the ships separately for each Player
-//          ideas:
-//              - I can create 2 battlefields and check them separately
-
 import java.util.Arrays;
 import java.util.Scanner;
 
