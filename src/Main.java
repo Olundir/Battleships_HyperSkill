@@ -1,3 +1,9 @@
+// TODO
+//  [ ] - a way to check whether the ship is sunk (individual for each ship)
+//  [ ] - extra step -> when the ship is sunken => "You sank a ship!"
+//  [ ] - after sinking all the ships => "You sank the last ship. You won. Congratulations!"
+
+import java.util.Arrays;
 import java.util.Scanner;
 
 public class Main {
@@ -12,6 +18,9 @@ public class Main {
         Battlefield battlefield = new Battlefield(ships);
 
         Game.initialShipPlacement(battlefield);
+        System.out.println("The game starts!\n");
+        Game.playRound(battlefield);
+        Game.scanner.close();
     }
 }
 
@@ -21,14 +30,14 @@ class Game extends GameRules {
     public static void initialShipPlacement(Battlefield battlefield) {
         battlefield.createBattlefield();
         battlefield.printBattlefield();
-        while (battlefield.getshipNumber() != 0) {
+        while (battlefield.getShipNumber() != 0) { // initial placement loop
             System.out.printf("\nEnter the coordinates of the %s (%d cells):\n\n",
                     battlefield.getShip().getShipName(), battlefield.getShip().getShipLength());
                 while(true) {
                     try {
                         battlefield.getShip().setShipCords(scanner.nextLine());
 
-                        checkGameRules(battlefield);
+                        checkPlacementRules(battlefield);
 
                         battlefield.placeShip();
                         battlefield.printBattlefield();
@@ -40,12 +49,36 @@ class Game extends GameRules {
                     }
                 }
         }
-        scanner.close();
+
     }
+
+    public static void playRound(Battlefield battlefield) {
+        int game = 3;
+            System.out.println("Take a shot!\n");
+            battlefield.printBattlefieldFOW();
+        while(game > 0) {
+            while (true) {
+                try {
+                    Shell shell = new Shell();
+                    shell.convertShellCords(scanner.nextLine());
+                    checkFireRules(battlefield, shell.getShellCords());
+                    battlefield.placeShell(shell.getShellCords());
+                    break;
+                } catch (Exception e) {
+                    System.out.println(e.getMessage().contains("Error") ? "\n" + e.getMessage() :
+                            new Exception(String.format("Error! %s. Try again: " + "\n",
+                                    e.getLocalizedMessage())).getMessage());
+                }
+            }
+//            if (gameState()) System.out.println("You sank the last ship. You won. Congratulations!");
+            game--;
+        }
+    }
+
 }
 
 class GameRules {
-    public static void checkGameRules(Battlefield battlefield) throws Exception {
+    public static void checkPlacementRules(Battlefield battlefield) throws Exception {
         int[] cords = battlefield.getShip().getShipCords();
         int length = battlefield.getShip().getShipLength();
         int lengthFromCords = 0;
@@ -56,26 +89,41 @@ class GameRules {
         } else if (!(cords[0] == cords[2] && cords[1] != cords[3]
         || cords[0] != cords[2] && cords[1] == cords[3])) {
             throw new Exception("You cannot put a ship diagonally, please enter " +
-                    "correct coordinates:");
+                    "correct coordinates:\n");
         }
         else if (length != lengthFromCords) {
-            throw new Exception("Wrong length of the ship. Try again:");
+            throw new Exception("Wrong length of the ship. Try again:\n");
         }
 
         for (int i = cords[0]; i <= cords[2]; i++) {
             for (int j = cords[1]; j <= cords[3]; j++) {
                 if (battlefield.getBattlefield()[i - 1][j - 1] == ('O')) {
-                    throw new Exception("You cannot put one ship on top of another. Try again:");
+                    throw new Exception("You cannot put one ship on top of another. Try " +
+                            "again:\n");
                 }
             }
         }
         for (int i = (cords[0] == 1 ? 1 : cords[0] - 1) ; i <= (cords[2] == 10 ? 10 : cords[2] + 1); i++) {
             for (int j = (cords[1] == 1 ? 1 : cords[1] - 1); j <= (cords[3] == 10 ? 10 : cords[3] + 1); j++) {
                 if (battlefield.getBattlefield()[i - 1][j - 1] == ('O')) {
-                    throw new Exception("Error! You placed it too close to another one. Try again:");
+                    throw new Exception("Error! You placed it too close to another one. Try " +
+                            "again:\n");
                 }
             }
         }
+    }
+
+    public static void checkFireRules(Battlefield battlefield, int[] shellCords) throws Exception {
+        if (shellCords[0] > 10 || shellCords[1] > 10) {
+            throw new Exception("Error! You entered the wrong coordinates! Try again:\n");
+        } else if (battlefield.getBattlefield()[shellCords[0] - 1][shellCords[1] - 1] == 'M' ||
+                battlefield.getBattlefield()[shellCords[0] - 1][shellCords[1] - 1] == 'X'){
+            throw new Exception("Error! You already shot here! Try again:\n");
+        }
+    }
+
+    public static boolean gameState() {
+        return true;
     }
 }
 
@@ -95,7 +143,7 @@ class Battlefield {
         return battlefield;
     }
 
-    public int getshipNumber() {
+    public int getShipNumber() {
         return this.shipNumber;
     }
 
@@ -119,6 +167,22 @@ class Battlefield {
             System.out.println();
         }
     }
+    public void printBattlefieldFOW() {
+        System.out.println(" 1 2 3 4 5 6 7 8 9 10");
+        char[] firstCol = {'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J'};
+        for (int i = 0; i < 10; i++) {
+            System.out.print(firstCol[i] + " ");
+            for (int j = 0; j < 10; j++) {
+                if (battlefield[i][j] != 'O') {
+                    System.out.print(battlefield[i][j]);
+                } else {
+                    System.out.print("~");
+                }
+                if (j != 9) System.out.print(" ");
+            }
+            System.out.println();
+        }
+    }
     public void placeShip() {
         for (int i = getShip().getShipCords()[0] - 1; i <= getShip().getShipCords()[2] - 1; i++) {
             for (int j = getShip().getShipCords()[1] - 1; j <= getShip().getShipCords()[3] - 1; j++) {
@@ -127,17 +191,61 @@ class Battlefield {
         }
         this.shipNumber--;
     }
+    public void placeShell(int[] cords) {
+        if(battlefield[cords[0] - 1][cords[1] - 1] == '~') {
+            battlefield[cords[0] - 1][cords[1] - 1] = 'M';
+            printBattlefieldFOW();
 
+            System.out.println("\nYou missed \n");
+
+        }
+        if(battlefield[cords[0] - 1][cords[1] - 1] == 'O') {
+            battlefield[cords[0] - 1][cords[1] - 1] = 'X';
+            printBattlefieldFOW();
+
+            decreaseHPBasedOnCords(cords);
+
+        }
+    }
+    public void decreaseHPBasedOnCords(int[] cords) {
+        for (int s = 0; s < 5; s++) {
+            int[] shipCords = ships[s].getShipCords();
+            for (int i = shipCords[0]; i <= shipCords[2]; i++){
+                for (int j = shipCords[1]; j <= shipCords[3]; j++){
+//                    System.out.printf("%d %d %d %d \n", i, j, cords[0], cords[1]);
+                    if (i == cords[0] && j == cords[1]) {
+                        ships[s].decreaseShipHP();
+                        System.out.println("You hit a ship! Try again: \n");
+                    }
+                }
+            }
+        }
+    }
+}
+
+class Shell {
+    private int[] shellCords;
+
+    public int[] getShellCords() {
+        return shellCords;
+    }
+    public void convertShellCords(String cords) {
+        this.shellCords = new int[2];
+        this.shellCords[0] = (int) cords.charAt(0) - 64;
+        this.shellCords[1] = Integer.parseInt(cords.replaceAll("[A-Z]", ""));
+    }
 }
 
 class Ship {
     private final String shipName;
     private final int shipLength;
     private int[] shipCords;
+    private int shipHP;
 
     public Ship(String name, int length) {
         shipName = name;
         shipLength = length;
+        shipHP = length;
     }
 
     public String getShipName() { return shipName; }
@@ -145,6 +253,8 @@ class Ship {
     public int getShipLength() { return shipLength; }
 
     public int[] getShipCords() { return this.shipCords; }
+
+    public int getShipHP() { return this.shipHP; }
 
     public void setShipCords(String cords) {
 
@@ -160,4 +270,8 @@ class Ship {
                     this.shipCords[0], this.shipCords[1]};
         }
     }
+    public void decreaseShipHP() {
+        shipHP--;
+    }
+
 }
