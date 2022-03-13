@@ -1,9 +1,3 @@
-// TODO
-//  [ ] - a way to check whether the ship is sunk (individual for each ship)
-//  [ ] - extra step -> when the ship is sunken => "You sank a ship!"
-//  [ ] - after sinking all the ships => "You sank the last ship. You won. Congratulations!"
-
-import java.util.Arrays;
 import java.util.Scanner;
 
 public class Main {
@@ -14,6 +8,7 @@ public class Main {
                 new Ship("Submarine", 3),
                 new Ship("Battleship", 4),
                 new Ship("Aircraft Carrier", 5)};
+
 
         Battlefield battlefield = new Battlefield(ships);
 
@@ -53,10 +48,9 @@ class Game extends GameRules {
     }
 
     public static void playRound(Battlefield battlefield) {
-        int game = 3;
             System.out.println("Take a shot!\n");
             battlefield.printBattlefieldFOW();
-        while(game > 0) {
+        while(!gameState(battlefield.getAllShips())) {
             while (true) {
                 try {
                     Shell shell = new Shell();
@@ -68,10 +62,9 @@ class Game extends GameRules {
                     System.out.println(e.getMessage().contains("Error") ? "\n" + e.getMessage() :
                             new Exception(String.format("Error! %s. Try again: " + "\n",
                                     e.getLocalizedMessage())).getMessage());
+                    battlefield.printBattlefieldFOW();
                 }
             }
-//            if (gameState()) System.out.println("You sank the last ship. You won. Congratulations!");
-            game--;
         }
     }
 
@@ -122,7 +115,10 @@ class GameRules {
         }
     }
 
-    public static boolean gameState() {
+    public static boolean gameState(Ship[] ships) {
+        for(Ship ship : ships) {
+            if (ship.getShipHP() > 0) return false;
+        }
         return true;
     }
 }
@@ -138,6 +134,8 @@ class Battlefield {
         this.shipNumber = shipsInput.length;
     }
     public Ship getShip() { return this.ships[shipNumber - 1]; }
+
+    public Ship[] getAllShips() { return ships; }
 
     public char[][] getBattlefield() {
         return battlefield;
@@ -196,7 +194,7 @@ class Battlefield {
             battlefield[cords[0] - 1][cords[1] - 1] = 'M';
             printBattlefieldFOW();
 
-            System.out.println("\nYou missed \n");
+            System.out.println("\nYou missed. Try again:\n");
 
         }
         if(battlefield[cords[0] - 1][cords[1] - 1] == 'O') {
@@ -209,16 +207,26 @@ class Battlefield {
     }
     public void decreaseHPBasedOnCords(int[] cords) {
         for (int s = 0; s < 5; s++) {
-            int[] shipCords = ships[s].getShipCords();
-            for (int i = shipCords[0]; i <= shipCords[2]; i++){
-                for (int j = shipCords[1]; j <= shipCords[3]; j++){
-//                    System.out.printf("%d %d %d %d \n", i, j, cords[0], cords[1]);
-                    if (i == cords[0] && j == cords[1]) {
-                        ships[s].decreaseShipHP();
-                        System.out.println("You hit a ship! Try again: \n");
+            try {
+                int[] shipCords = ships[s].getShipCords();
+                for (int i = shipCords[0]; i <= shipCords[2]; i++){
+                    for (int j = shipCords[1]; j <= shipCords[3]; j++){
+                        if (i == cords[0] && j == cords[1]) {
+                            ships[s].decreaseShipHP();
+                            if (ships[s].getShipHP() != 0) {
+                                System.out.println("You hit a ship! Try again: \n");
+                            } else if (GameRules.gameState(ships)) {
+                                System.out.println("You sank the last ship. You won. Congratulations! \n");
+                            } else {
+                                System.out.println("You sank a ship! Specify a new target: \n");
+                            }
+                        }
                     }
                 }
+            } catch (Exception ignored) {
+
             }
+
         }
     }
 }
